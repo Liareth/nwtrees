@@ -192,22 +192,18 @@ namespace
 
     bool tokenize_identifier(const LexerInput& input, LexerMatch* match)
     {
-        int distance;
+        const char* head = input.head();
+        if (!is_letter(*head) && *head != '_') return false;
 
-        for (distance = 0; const char ch = peek(input, distance); ++distance)
+        while (const char ch = *++head)
         {
-            if (!is_letter(ch) && (!is_digit(ch) || !distance) && ch != '_') break;
+            if (!is_letter(ch) && !is_digit(ch) && ch != '_') break;
         }
 
-        if (distance)
-        {
-            match->length = distance;
-            match->token.type = Token::Identifier;
-            match->token.identifier.str = { input.offset, match->length };
-            return true;
-        }
-
-        return false;
+        match->length = (int)(head - input.head());
+        match->token.type = Token::Identifier;
+        match->token.identifier.str = { input.offset, match->length };
+        return true;
     }
 
     bool tokenize_literal(const LexerInput& input, LexerMatch* match)
