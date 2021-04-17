@@ -35,10 +35,18 @@ namespace
 
     inline char read(const LexerInput& input) { return input.base[input.offset]; }
     inline char peek(const LexerInput& input, int count = 1) { return input.base[input.offset + count]; }
-    inline int skip_until(const char* tail, const char term)
+
+    template <typename ... Args>
+    inline int skip_until(const char* tail, const Args ... terms)
     {
+        static constexpr auto contains =
+            [](const auto first, const auto... args) -> bool
+        {
+            return ((first == args) || ...);
+        };
+
         const char* head = tail;
-        while (const char ch = *head) { if (ch == term) break; ++head; }
+        while (const char ch = *head) { if (contains(ch, terms ...)) break; ++head; }
         return (int)(head - tail);
     }
 
@@ -224,7 +232,7 @@ namespace
             while (read(temp_input))
             {
                 const char* head = temp_input.head();
-                temp_input.offset += std::min(skip_until(head, '\"'), skip_until(head, '\n'));
+                temp_input.offset += skip_until(head, '\"', '\n');
 
                 if (read(temp_input) == '\n')
                 {
