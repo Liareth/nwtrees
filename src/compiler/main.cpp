@@ -43,13 +43,9 @@ int main(const int argc, const char** argv)
     }
 
     float total_time = 0.0f;
-    float avg_tokens_per_char = 0.0f;
 
     for (const std::filesystem::path& path : scripts_to_build)
     {
-        printf("Building %s\n", path.filename().string().c_str());
-
-        printf(" Lexer ");
         nwtrees::LexerOutput lexer;
 
         const std::string file = read_source_file(path.string().c_str());
@@ -61,22 +57,13 @@ int main(const int argc, const char** argv)
         const float ms = std::chrono::duration_cast<std::chrono::nanoseconds>(after - before).count() / 1000000.0f;
         total_time += ms;
 
-        const float tokens_per_char = lexer.tokens.empty() ? 0.0f : file.length() / (float)lexer.tokens.size();
-        avg_tokens_per_char += tokens_per_char;
-
-        if (lexer.errors.empty())
-        {
-            printf("SUCCESS (%.2f ms) %zd tokens %.2f tpc\n", ms, lexer.tokens.size(), tokens_per_char);
-        }
-        else
+        if (!lexer.errors.empty())
         {
             printf("ERROR: %d\n", lexer.errors[0].code);
             __debugbreak();
         }
     }
 
-    avg_tokens_per_char /= scripts_to_build.size();
-
-    printf("Total runtime: %.2f ms, avg tpc: %.2f", total_time, avg_tokens_per_char);
+    printf("Total runtime: %.2f ms\n", total_time);
     fflush(stdout);
 }

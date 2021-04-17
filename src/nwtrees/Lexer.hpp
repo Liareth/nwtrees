@@ -158,11 +158,6 @@ namespace nwtrees
         DebugData debug;
     };
 
-    struct LexerError
-    {
-
-    };
-
     struct LexerOutput
     {
         std::vector<Token> tokens;

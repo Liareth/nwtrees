@@ -24,8 +24,6 @@ namespace
 
     char seek(LexerInput& input);
 
-
-
     std::vector<DebugRange> make_debug_ranges(const LexerInput& input);
     const DebugRange& find_debug_range(const std::vector<DebugRange>& ranges, const LexerInput& input);
     void add_debug_data(const LexerInput& input, Token& token);
