@@ -42,7 +42,7 @@ namespace
 
     inline bool cmp(const LexerMatch& lhs, const LexerMatch& rhs) { return lhs.length > rhs.length; }
     inline bool is_whitespace(const char ch) { return ch == ' ' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' || ch == '\n'; }
-    inline bool is_letter(const char ch) { return ch >= 'A' && ch <= 'z'; }
+    inline bool is_letter(const char ch) { return (ch >= 'A' && ch <= 'Z') || ch >= 'a' && ch <= 'z'; }
     inline bool is_digit(const char ch) { return ch >= '0' && ch <= '9'; }
     inline bool is_digit_hex(const char ch) { return is_digit(ch) || (ch >= 'A' && ch <= 'F') || ch >= 'a' && ch <= 'f'; }
 
@@ -152,14 +152,52 @@ namespace
 
     bool tokenize_keyword(const LexerInput& input, LexerMatch* match)
     {
-        const char* head = input.head();
+        Keyword keyword;
 
-        for (const auto& [str, kw] : keywords)
+        switch (read(input))
         {
-            if (std::strncmp(head, str.data(), str.size()) != 0) continue;
-            match->length = (int)str.size();
+            case 'a': keyword = Keyword::Action; break;
+            case 'b': keyword = Keyword::Break; break;
+            case 'c': keyword = peek(input) == 'a' ? Keyword::Case : Keyword::Const; break;
+            case 'd': keyword = peek(input) == 'e' ? Keyword::Default : Keyword::Do; break;
+            case 'e': switch (peek(input))
+            {
+                case 'f': keyword = Keyword::Effect; break;
+                case 'l': keyword = Keyword::Else; break;
+                case 'v': keyword = Keyword::Event; break;
+                default: return false;
+            }; break;
+            case 'f': keyword = peek(input) == 'l' ? Keyword::Float : Keyword::For; break;
+            case 'i': switch (peek(input))
+            {
+                case 'f': keyword = Keyword::If; break;
+                case 'n': keyword = Keyword::Int; break;
+                case 't': keyword = Keyword::ItemProperty; break;
+                default: return false;
+            }; break;
+            case 'l': keyword = Keyword::Location; break;
+            case 'o': keyword = Keyword::Object; break;
+            case 'r': keyword = Keyword::Return; break;
+            case 's': switch (peek(input))
+            {
+                case 't': keyword = peek(input, 3) == 'i' ? Keyword::String : Keyword::Struct; break;
+                case 'w': keyword = Keyword::Switch; break;
+                default: return false;
+            }; break;
+            case 't': keyword = Keyword::Talent; break;
+            case 'v': keyword = peek(input) == 'e' ? Keyword::Vector : Keyword::Void; break;
+            case 'w': keyword = Keyword::While; break;
+
+            default: return false;
+        }
+
+        const std::string_view& keyword_sv = keywords[(int)keyword].first;
+
+        if (std::strncmp(input.head(), keyword_sv.data(), keyword_sv.length()) == 0)
+        {
+            match->length = (int)keyword_sv.length();
             match->token.type = Token::Keyword;
-            match->token.keyword = kw;
+            match->token.keyword = keyword;
             return true;
         }
 
@@ -319,65 +357,65 @@ namespace
 
         switch (read(input))
         {
-            case '[': punctuator = Punctuator::LeftSquareBracket; break;
+            case '&': switch (peek(input))
+            {
+                default: punctuator = Punctuator::Amp; break;
+                case '&': punctuator = Punctuator::AmpAmp; break;
+                case '=': punctuator = Punctuator::AmpEquals; break;
+            }; break;
+            case '*': punctuator = peek(input) != '=' ? Punctuator::Asterisk : Punctuator::AsteriskEquals; break;
+            case '^': punctuator = peek(input) != '=' ? Punctuator::Caret : Punctuator::CaretEquals; break;
+            case ':': punctuator = peek(input) != ':' ? Punctuator::Colon : Punctuator::ColonColon; break;
+            case ',': punctuator = Punctuator::Comma; break;
+            case '.': punctuator = peek(input) != '.' || peek(input, 2) != '.' ? Punctuator::Dot : Punctuator::DotDotDot; break;
+            case '=': punctuator = peek(input) != '=' ? Punctuator::Equal : Punctuator::EqualEqual; break;
+            case '!': punctuator = peek(input) != '=' ? Punctuator::Exclamation : Punctuator::ExclamationEquals; break;
+            case '>': switch (peek(input))
+            {
+                default: punctuator = Punctuator::Greater; break;
+                case '=': punctuator = Punctuator::GreaterEquals; break;
+                case '>': punctuator = peek(input, 2) != '=' ? Punctuator::GreaterGreater : Punctuator::GreaterGreaterEquals; break;
+            }; break;
             case '{': punctuator = Punctuator::LeftCurlyBracket; break;
             case '(': punctuator = Punctuator::LeftParen; break;
-            case ']': punctuator = Punctuator::RightSquareBracket; break;
-            case '}': punctuator = Punctuator::RightCurlyBracket; break;
-            case ')': punctuator = Punctuator::RightParen; break;
-            case '+': switch (peek(input))
+            case '[': punctuator = Punctuator::LeftSquareBracket; break;
+            case '<': switch (peek(input))
             {
-                case '=': punctuator = Punctuator::PlusEquals; break;
-                case '+': punctuator = Punctuator::PlusPlus; break;
-                default: punctuator = Punctuator::Plus; break;
+                default: punctuator = Punctuator::Less; break;
+                case '=': punctuator = Punctuator::LessEquals; break;
+                case '<': punctuator = peek(input, 2) != '=' ? Punctuator::LessLess : Punctuator::LessLessEquals; break;
             }; break;
             case '-': switch (peek(input))
             {
+                default: punctuator = Punctuator::Minus; break;
                 case '=': punctuator = Punctuator::MinusEquals; break;
                 case '-': punctuator = Punctuator::MinusMinus; break;
-                default: punctuator = Punctuator::Minus; break;
             }; break;
-            case '&': switch (peek(input))
-            {
-                case '=': punctuator = Punctuator::AmpEquals; break;
-                case '&': punctuator = Punctuator::AmpAmp; break;
-                default: punctuator = Punctuator::Amp; break;
-            }; break;
+            case '%': punctuator = peek(input) != '=' ? Punctuator::Modulo : Punctuator::ModuloEquals; break;
             case '|': switch (peek(input))
             {
+                default: punctuator = Punctuator::Pipe; break;
                 case '=': punctuator = Punctuator::PipeEquals; break;
                 case '|': punctuator = Punctuator::PipePipe; break;
-                default: punctuator = Punctuator::Pipe; break;
             }; break;
-            case '=': punctuator = peek(input) == '=' ? Punctuator::EqualEqual : Punctuator::Equal; break;
-            case '!': punctuator = peek(input) == '=' ? Punctuator::ExclamationEquals : Punctuator::Exclamation; break;
-            case '^': punctuator = peek(input) == '=' ? Punctuator::CaretEquals : Punctuator::Caret; break;
-            case '/': punctuator = peek(input) == '=' ? Punctuator::SlashEquals : Punctuator::Slash; break;
-            case '*': punctuator = peek(input) == '=' ? Punctuator::AsteriskEquals : Punctuator::Asterisk; break;
-            case '<': switch (peek(input))
+            case '+': switch (peek(input))
             {
-                case '=': punctuator = Punctuator::LessEquals; break;
-                case '<': punctuator = peek(input, 2) == '=' ? Punctuator::LessLessEquals : Punctuator::LessLess; break;
-                default: punctuator = Punctuator::Less; break;
+                default: punctuator = Punctuator::Plus; break;
+                case '=': punctuator = Punctuator::PlusEquals; break;
+                case '+': punctuator = Punctuator::PlusPlus; break;
             }; break;
-            case '>': switch (peek(input))
-            {
-                case '=': punctuator = Punctuator::GreaterEquals; break;
-                case '>': punctuator = peek(input, 2) == '=' ? Punctuator::GreaterGreaterEquals : Punctuator::GreaterGreater; break;
-                default: punctuator = Punctuator::Greater; break;
-            }; break;
-            case '%': punctuator = peek(input) == '=' ? Punctuator::ModuloEquals : Punctuator::Modulo; break;
-            case ':': punctuator = peek(input) == ':' ? Punctuator::ColonColon : Punctuator::Colon; break;
-            case ';': punctuator = Punctuator::Semicolon; break;
-            case '.': punctuator = peek(input) == '.' && peek(input, 2) == '.' ? Punctuator::DotDotDot : Punctuator::Dot; break;
-            case ',': punctuator = Punctuator::Comma; break;
             case '?': punctuator = Punctuator::Question; break;
+            case '}': punctuator = Punctuator::RightCurlyBracket; break;
+            case ')': punctuator = Punctuator::RightParen; break;
+            case ']': punctuator = Punctuator::RightSquareBracket; break;
+            case ';': punctuator = Punctuator::Semicolon; break;
+            case '/': punctuator = peek(input) != '=' ? Punctuator::Slash : Punctuator::SlashEquals; break;
             case '~': punctuator = Punctuator::Tilde; break;
 
             default: return false;
         }
 
-        match->length = (int)punctuators[(int)punctuator].first.size();
+        match->length = (int)punctuators[(int)punctuator].first.length();
         match->token.type = Token::Punctuator;
         match->token.punctuator = punctuator;
 
