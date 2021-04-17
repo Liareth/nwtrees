@@ -10,12 +10,6 @@
 
 namespace nwtrees
 {
-    struct NameBufferEntry
-    {
-        int idx;
-        int len;
-    };
-
     enum class Keyword : uint8_t
     {
         Action,
@@ -46,31 +40,15 @@ namespace nwtrees
         EnumCount
     };
 
-    struct Identifier
+    enum class Literal : uint8_t
     {
-        NameBufferEntry str;
-    };
-
-    struct Literal
-    {
-        enum Type
-        {
-            String,
-            Int,
-            Float
-        } type;
-
-        union
-        {
-            NameBufferEntry str;
-            int integer;
-            float flt;
-        };
+        String,
+        Int,
+        Float
     };
 
     enum class Punctuator : uint8_t
     {
-        // See WG14/N1256 6.4.6 with some exclusions and additions
         Amp,
         AmpAmp,
         AmpEquals,
@@ -121,11 +99,10 @@ namespace nwtrees
         EnumCount
     };
 
-    struct DebugRange
+    struct NameBufferEntry
     {
-        int line;
-        int index_start;
-        int index_end;
+        int idx;
+        int len;
     };
 
     struct Token
@@ -143,9 +120,19 @@ namespace nwtrees
         union
         {
             nwtrees::Keyword keyword;
-            nwtrees::Identifier identifier;
             nwtrees::Literal literal;
             nwtrees::Punctuator punctuator;
+        };
+
+        union
+        {
+            NameBufferEntry identifier_data;
+            union
+            {
+                NameBufferEntry str;
+                int integer;
+                float flt;
+            } literal_data;
         };
     };
 

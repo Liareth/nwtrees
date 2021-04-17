@@ -24,9 +24,15 @@ namespace
 
     char seek(LexerInput& input);
 
+    struct DebugRange
+    {
+        int line;
+        int index_start;
+        int index_end;
+    };
+
     std::vector<DebugRange> make_debug_ranges(const char* data);
     const DebugRange& find_debug_range(const std::vector<DebugRange>& ranges, const LexerInput& input);
-    void add_debug_data(const LexerInput& input, Token& token);
 
     bool tokenize_keyword(const LexerInput& input, LexerMatch* match);
     bool tokenize_identifier(const LexerInput& input, LexerMatch* match);
@@ -210,7 +216,7 @@ namespace
 
         match->length = (int)(head - input.head());
         match->token.type = Token::Identifier;
-        match->token.identifier.str = { input.offset, match->length };
+        match->token.identifier_data = { input.offset, match->length };
         return true;
     }
 
@@ -250,8 +256,8 @@ namespace
 
             match->length = temp_input.offset - input.offset + 1;
             match->token.type = Token::Literal;
-            match->token.literal.type = Literal::String;
-            match->token.literal.str = { input.offset + 1, match->length - 2 };
+            match->token.literal = Literal::String;
+            match->token.literal_data.str = { input.offset + 1, match->length - 2 };
             return true;
         }
         else if (is_number || is_decimal || is_sign)
@@ -317,16 +323,16 @@ namespace
             if (seen_decimal || seen_exponent || seen_float_specifier)
             {
                 const double parsed = std::strtod(input.head(), &parsed_head);
-                match->token.literal.type = Literal::Float;
-                match->token.literal.flt = (float)parsed;
+                match->token.literal = Literal::Float;
+                match->token.literal_data.flt = (float)parsed;
             }
             // Otherwise, we're an int.
             else
             {
                 const int base = is_hex ? 16 : 10; // note: nwscript does not support octal with leading 0
                 const long int parsed = std::strtol(input.head(), &parsed_head, base);
-                match->token.literal.type = Literal::Int;
-                match->token.literal.integer = (int)parsed;
+                match->token.literal = Literal::Int;
+                match->token.literal_data.integer = (int)parsed;
             }
 
             int parsed_distance = (int)(parsed_head - head);
@@ -478,11 +484,11 @@ LexerOutput nwtrees::lexer(const char* data)
     for (Token& token : output.tokens)
     {
         const bool is_identifier = token.type == Token::Identifier;
-        const bool is_str_literal = token.type == Token::Literal && token.literal.type == Literal::String;
+        const bool is_str_literal = token.type == Token::Literal && token.literal == Literal::String;
 
         if (is_identifier || is_str_literal)
         {
-            NameBufferEntry* entry = is_identifier ? &token.identifier.str : &token.literal.str;
+            NameBufferEntry* entry = is_identifier ? &token.identifier_data : &token.literal_data.str;
             const size_t new_idx = output.names.size();
             output.names.resize(new_idx + entry->len);
             std::memcpy(output.names.data() + new_idx, input.base + entry->idx, entry->len);

@@ -85,8 +85,8 @@ TEST_CLASS(Lexer)
         {
             const nwtrees::Token& token = lex.tokens[i];
             TEST_EXPECT(token.type == nwtrees::Token::Identifier);
-            TEST_EXPECT(token.identifier.str.len == std::strlen(identifiers[i]));
-            TEST_EXPECT(std::strncmp(lex.names.data() + token.identifier.str.idx, identifiers[i], token.identifier.str.len) == 0);
+            TEST_EXPECT(token.identifier_data.len == std::strlen(identifiers[i]));
+            TEST_EXPECT(std::strncmp(lex.names.data() + token.identifier_data.idx, identifiers[i], token.identifier_data.len) == 0);
         }
     }
 
@@ -107,9 +107,9 @@ TEST_CLASS(Lexer)
         {
             const nwtrees::Token& token = lex.tokens[i];
             TEST_EXPECT(token.type == nwtrees::Token::Literal);
-            TEST_EXPECT(token.literal.type == nwtrees::Literal::String);
-            TEST_EXPECT(token.literal.str.len == std::strlen(literals[i]) - 2);
-            TEST_EXPECT(std::strncmp(lex.names.data() + token.literal.str.idx, literals[i] + 1, token.literal.str.len - 2) == 0);
+            TEST_EXPECT(token.literal == nwtrees::Literal::String);
+            TEST_EXPECT(token.literal_data.str.len == std::strlen(literals[i]) - 2);
+            TEST_EXPECT(std::strncmp(lex.names.data() + token.literal_data.str.idx, literals[i] + 1, token.literal_data.str.len - 2) == 0);
         }
     }
 
@@ -122,8 +122,8 @@ TEST_CLASS(Lexer)
 
         const nwtrees::Token& token = lex.tokens[0];
         TEST_EXPECT(token.type == nwtrees::Token::Literal);
-        TEST_EXPECT(token.literal.type == nwtrees::Literal::String);
-        TEST_EXPECT(std::strncmp(lex.names.data() + token.literal.str.idx, "testtest2test3", token.literal.str.len) == 0);
+        TEST_EXPECT(token.literal == nwtrees::Literal::String);
+        TEST_EXPECT(std::strncmp(lex.names.data() + token.literal_data.str.idx, "testtest2test3", token.literal_data.str.len) == 0);
     }
 
     TEST_METHOD(Literals_Int)
@@ -138,10 +138,10 @@ TEST_CLASS(Lexer)
         {
             const nwtrees::Token& token = lex.tokens[i];
             TEST_EXPECT(token.type == nwtrees::Token::Literal);
-            TEST_EXPECT(token.literal.type == nwtrees::Literal::Int);
+            TEST_EXPECT(token.literal == nwtrees::Literal::Int);
 
             const int as_int = (int)std::strtol(literals[i], nullptr, strstr(literals[i], "0x") ? 16 : 10);
-            TEST_EXPECT(token.literal.integer == as_int);
+            TEST_EXPECT(token.literal_data.integer == as_int);
         }
     }
 
@@ -157,10 +157,10 @@ TEST_CLASS(Lexer)
         {
             const nwtrees::Token& token = lex.tokens[i];
             TEST_EXPECT(token.type == nwtrees::Token::Literal);
-            TEST_EXPECT(token.literal.type == nwtrees::Literal::Float);
+            TEST_EXPECT(token.literal == nwtrees::Literal::Float);
 
             const float as_flt = std::atof(literals[i]);
-            TEST_EXPECT(token.literal.flt == as_flt);
+            TEST_EXPECT(token.literal_data.flt == as_flt);
         }
     }
 
