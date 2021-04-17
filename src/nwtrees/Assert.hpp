@@ -4,11 +4,18 @@
 
 namespace nwtrees::assert
 {
+    inline int g_fail_count = 0;
+
     template <typename ... Args>
     void fail(const char* condition, const char* file, int line, const char* format, Args ... args)
     {
-        printf("ASSERTION FAILURE\n  Summary: ");
-        printf(format, args ...);
+        printf("ASSERTION FAILURE");
+
+        if (format)
+        {
+            printf("\n  Summary: ");
+            printf(format, args ...);
+        }
 
         if (condition)
         {
@@ -18,6 +25,8 @@ namespace nwtrees::assert
         {
             printf("\n  Failed at (%s:%d)\n  ", file, line);
         }
+
+        ++g_fail_count;
 
 #if defined(_WIN32)
         __debugbreak();

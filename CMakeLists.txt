@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 project(nwtrees VERSION 1.0.0 LANGUAGES CXX)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -17,3 +17,7 @@ file(GLOB_RECURSE NWTREES_COMPILER_SRC src/compiler/*.cpp src/compiler/*.hpp)
 add_executable(nwtrees ${NWTREES_COMPILER_SRC})
 target_link_libraries(nwtrees nwtrees_core)
 target_set_warnings(nwtrees)
+
+file(GLOB_RECURSE NWTREES_TESTS_SRC tests/*.cpp tests/*.hpp)
+add_executable(nwtrees_tests ${NWTREES_TESTS_SRC})
+target_link_libraries(nwtrees_tests nwtrees_core)
