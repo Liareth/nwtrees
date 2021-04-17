@@ -2,7 +2,6 @@
 #include <nwtrees/Lexer.hpp>
 
 #include <algorithm>
-#include <ctype.h>
 #include <span>
 #include <string_view>
 #include <unordered_map>
@@ -25,8 +24,6 @@ namespace
     };
 
     char seek(LexerInput& input);
-    char read(const LexerInput& input);
-    char peek(const LexerInput& input, int count = 1);
 
     int skip_until(const char* tail, const char term);
     int skip_until(const char* tail, const std::span<const char>& matches);
@@ -40,8 +37,14 @@ namespace
     bool tokenize_literal(const LexerInput& input, LexerMatch* match);
     bool tokenize_punctuator(const LexerInput& input, LexerMatch* match);
 
-    bool cmp(const LexerMatch& lhs, const LexerMatch& rhs) { return lhs.length > rhs.length; }
-    bool is_whitespace(const char ch) { return ch == ' ' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' || ch == '\n'; }
+    inline char read(const LexerInput& input) { return input.base[input.offset]; }
+    inline char peek(const LexerInput& input, int count = 1) { return input.base[input.offset + count]; }
+
+    inline bool cmp(const LexerMatch& lhs, const LexerMatch& rhs) { return lhs.length > rhs.length; }
+    inline bool is_whitespace(const char ch) { return ch == ' ' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' || ch == '\n'; }
+    inline bool is_letter(const char ch) { return ch >= 'A' && ch <= 'z'; }
+    inline bool is_digit(const char ch) { return ch >= '0' && ch <= '9'; }
+    inline bool is_digit_hex(const char ch) { return is_digit(ch) || (ch >= 'A' && ch <= 'F') || ch >= 'a' && ch <= 'f'; }
 
     char seek(LexerInput& input)
     {
@@ -95,16 +98,6 @@ namespace
         }
 
         return '\0';
-    }
-
-    char read(const LexerInput& input)
-    {
-        return input.base[input.offset];
-    }
-
-    char peek(const LexerInput& input, int count)
-    {
-        return input.base[input.offset + count];
     }
 
     int skip_until(const char* tail, const char term)
@@ -179,7 +172,7 @@ namespace
 
         for (distance = 0; const char ch = peek(input, distance); ++distance)
         {
-            if (!std::isalpha(ch) && (!std::isdigit(ch) || !distance) && ch != '_') break;
+            if (!is_letter(ch) && (!is_digit(ch) || !distance) && ch != '_') break;
         }
 
         if (distance)
@@ -198,7 +191,7 @@ namespace
         const char first_ch = read(input);
 
         const bool is_string = first_ch == '\"';
-        const bool is_number = std::isdigit(first_ch);
+        const bool is_number = is_digit(first_ch);
         const bool is_decimal = first_ch == '.';
         const bool is_sign = first_ch == '+' || first_ch == '-';
 
@@ -259,7 +252,7 @@ namespace
                 {
                     seen_float_specifier = true;
                 }
-                else if (std::isdigit(ch) || (is_hex && std::isxdigit(ch)))
+                else if (is_digit(ch) || (is_hex && is_digit_hex(ch)))
                 {
                     seen_number = true;
                 }
