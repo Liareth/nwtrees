@@ -177,6 +177,7 @@ namespace nwtrees
 
 #define TREES_TK(str, enum) std::make_pair(std::string_view(str), enum)
 
+    // Must match order of Keyword enum.
     static constexpr inline std::array keywords
     {
         TREES_TK("if", Keyword::If),
@@ -207,6 +208,7 @@ namespace nwtrees
         TREES_TK("default", Keyword::Default),
     }; static_assert((size_t)Keyword::EnumCount == keywords.size());
 
+    // Must match order of Punctuator enum.
     static constexpr inline std::array punctuators
     {
         TREES_TK("[", Punctuator::LeftSquareBracket),

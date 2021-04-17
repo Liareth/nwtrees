@@ -31,7 +31,7 @@ namespace
     int skip_until(const char* tail, const char term);
     int skip_until(const char* tail, const std::span<const char>& matches);
 
-    std::vector<DebugRange> make_debug_ranges(const LexerInput& input, LexerOutput& output);
+    std::vector<DebugRange> make_debug_ranges(const LexerInput& input);
     const DebugRange& find_debug_range(const std::vector<DebugRange>& ranges, const LexerInput& input);
     void add_debug_data(const LexerInput& input, Token& token);
 
@@ -123,7 +123,7 @@ namespace
         return (int)(head - tail);
     }
 
-    std::vector<DebugRange> make_debug_ranges(const LexerInput& input, LexerOutput& output)
+    std::vector<DebugRange> make_debug_ranges(const LexerInput& input)
     {
         const char* str = input.base;
 
@@ -322,39 +322,71 @@ namespace
 
     bool tokenize_punctuator(const LexerInput& input, LexerMatch* match)
     {
-        const char* head = input.head();
+        Punctuator punctuator;
 
-        // Unlike keywords, we are extremely likely to find multiple matches here: for example,
-        // "+=" could match + or +=, and ">>=" could match ">" or ">>" or ">>=".
-        // Thankfully, there is an effective way for us to get the upper bound of possible matches:
-        // the length of the longest punctuator!
-
-        static constexpr size_t longest_punctuator =
-            std::max_element(std::begin(punctuators), std::end(punctuators),
-            [] (const auto& lhs, const auto& rhs)
+        switch (read(input))
         {
-            return lhs.first.size() < rhs.first.size();
-        })->first.size();
+            case '[': punctuator = Punctuator::LeftSquareBracket; break;
+            case '{': punctuator = Punctuator::LeftCurlyBracket; break;
+            case '(': punctuator = Punctuator::LeftParen; break;
+            case ']': punctuator = Punctuator::RightSquareBracket; break;
+            case '}': punctuator = Punctuator::RightCurlyBracket; break;
+            case ')': punctuator = Punctuator::RightParen; break;
+            case '+': switch (peek(input))
+            {
+                case '=': punctuator = Punctuator::PlusEquals; break;
+                case '+': punctuator = Punctuator::PlusPlus; break;
+                default: punctuator = Punctuator::Plus; break;
+            }; break;
+            case '-': switch (peek(input))
+            {
+                case '=': punctuator = Punctuator::MinusEquals; break;
+                case '-': punctuator = Punctuator::MinusMinus; break;
+                default: punctuator = Punctuator::Minus; break;
+            }; break;
+            case '&': switch (peek(input))
+            {
+                case '=': punctuator = Punctuator::AmpEquals; break;
+                case '&': punctuator = Punctuator::AmpAmp; break;
+                default: punctuator = Punctuator::Amp; break;
+            }; break;
+            case '|': switch (peek(input))
+            {
+                case '=': punctuator = Punctuator::PipeEquals; break;
+                case '|': punctuator = Punctuator::PipePipe; break;
+                default: punctuator = Punctuator::Pipe; break;
+            }; break;
+            case '=': punctuator = peek(input) == '=' ? Punctuator::EqualEqual : Punctuator::Equal; break;
+            case '!': punctuator = peek(input) == '=' ? Punctuator::ExclamationEquals : Punctuator::Exclamation; break;
+            case '^': punctuator = peek(input) == '=' ? Punctuator::CaretEquals : Punctuator::Caret; break;
+            case '/': punctuator = peek(input) == '=' ? Punctuator::SlashEquals : Punctuator::Slash; break;
+            case '*': punctuator = peek(input) == '=' ? Punctuator::AsteriskEquals : Punctuator::Asterisk; break;
+            case '<': switch (peek(input))
+            {
+                case '=': punctuator = Punctuator::LessEquals; break;
+                case '<': punctuator = peek(input, 2) == '=' ? Punctuator::LessLessEquals : Punctuator::LessLess; break;
+                default: punctuator = Punctuator::Less; break;
+            }; break;
+            case '>': switch (peek(input))
+            {
+                case '=': punctuator = Punctuator::GreaterEquals; break;
+                case '>': punctuator = peek(input, 2) == '=' ? Punctuator::GreaterGreaterEquals : Punctuator::GreaterGreater; break;
+                default: punctuator = Punctuator::Greater; break;
+            }; break;
+            case '%': punctuator = peek(input) == '=' ? Punctuator::ModuloEquals : Punctuator::Modulo; break;
+            case ':': punctuator = peek(input) == ':' ? Punctuator::ColonColon : Punctuator::Colon; break;
+            case ';': punctuator = Punctuator::Semicolon; break;
+            case '.': punctuator = peek(input) == '.' && peek(input, 2) == '.' ? Punctuator::DotDotDot : Punctuator::Dot; break;
+            case ',': punctuator = Punctuator::Comma; break;
+            case '?': punctuator = Punctuator::Question; break;
+            case '~': punctuator = Punctuator::Tilde; break;
 
-        int match_count = 0;
-        LexerMatch matches[longest_punctuator];
-
-        for (const auto& [str, punc] : punctuators)
-        {
-            NWTREES_ASSERT(match_count <= longest_punctuator);
-
-            if (std::strncmp(head, str.data(), str.size()) != 0) continue;
-            matches[match_count].length = (int)str.size();
-            matches[match_count].token.type = Token::Punctuator;
-            matches[match_count].token.punctuator = punc;
-            ++match_count;
+            default: return false;
         }
 
-        if (!match_count) return false;
-
-        // As with the calling function, we sort by token length and select the longest token.
-        std::sort(matches, matches + match_count, &cmp);
-        *match = std::move(matches[0]);
+        match->length = (int)punctuators[(int)punctuator].first.size();
+        match->token.type = Token::Punctuator;
+        match->token.punctuator = punctuator;
 
         return true;
     }
@@ -365,7 +397,7 @@ LexerOutput nwtrees::lexer(const char* data)
     LexerOutput output;
     LexerInput input = { data, 0 };
 
-    output.debug_ranges = make_debug_ranges(input, output);
+    output.debug_ranges = make_debug_ranges(input);
 
     while (seek(input))
     {
