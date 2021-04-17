@@ -185,4 +185,12 @@ TEST_CLASS(Lexer)
             TEST_EXPECT(token.punctuator == nwtrees::punctuators[i].second);
         }
     }
+
+    TEST_METHOD(Invalid)
+    {
+        TEST_EXPECT(!nwtrees::lexer("`").errors.empty());
+        TEST_EXPECT(!nwtrees::lexer("\\").errors.empty());
+        TEST_EXPECT(!nwtrees::lexer("0c").errors.empty());
+        TEST_EXPECT(!nwtrees::lexer("@@").errors.empty());
+    }
 };

@@ -121,13 +121,6 @@ namespace nwtrees
         EnumCount
     };
 
-    struct DebugData
-    {
-        int line;
-        int column_start;
-        int column_end;
-    };
-
     struct DebugRange
     {
         int line;
@@ -154,8 +147,6 @@ namespace nwtrees
             nwtrees::Literal literal;
             nwtrees::Punctuator punctuator;
         };
-
-        DebugData debug;
     };
 
     struct LexerOutput
@@ -163,7 +154,6 @@ namespace nwtrees
         std::vector<Token> tokens;
         std::vector<char> names;
         std::vector<Error> errors;
-        std::vector<DebugRange> debug_ranges;
     };
 
     LexerOutput lexer(const char* data);

@@ -24,7 +24,7 @@ namespace
 
     char seek(LexerInput& input);
 
-    std::vector<DebugRange> make_debug_ranges(const LexerInput& input);
+    std::vector<DebugRange> make_debug_ranges(const char* data);
     const DebugRange& find_debug_range(const std::vector<DebugRange>& ranges, const LexerInput& input);
     void add_debug_data(const LexerInput& input, Token& token);
 
@@ -102,27 +102,27 @@ namespace
         return '\0';
     }
 
-    std::vector<DebugRange> make_debug_ranges(const LexerInput& input)
+    std::vector<DebugRange> make_debug_ranges(const char* data)
     {
-        const char* str = input.base;
+        const char* head = data;
 
         int line = 0;
         int line_idx_start = 0;
 
         std::vector<DebugRange> ranges;
 
-        while (const char ch = *str++)
+        while (const char ch = *head++)
         {
             if (ch == '\n')
             {
-                const int line_idx_next = (int)(str - input.base);
+                const int line_idx_next = (int)(head - data);
                 ranges.push_back({ line, line_idx_start, line_idx_next - 1 });
                 line = line + 1;
                 line_idx_start = line_idx_next;
             }
         }
 
-        ranges.push_back({ line, line_idx_start, (int)(str - input.base - 1) });
+        ranges.push_back({ line, line_idx_start, (int)(head - data - 1) });
         return ranges;
     }
 
@@ -414,8 +414,6 @@ LexerOutput nwtrees::lexer(const char* data)
     LexerOutput output;
     LexerInput input = { data, 0 };
 
-    output.debug_ranges = make_debug_ranges(input);
-
     while (seek(input))
     {
         LexerMatch matches[Token::EnumCount];
@@ -443,10 +441,10 @@ LexerOutput nwtrees::lexer(const char* data)
             ++match_count;
         }
 
-        const DebugRange& range = find_debug_range(output.debug_ranges, input);
-
         if (!match_count)
         {
+            const DebugRange& range = find_debug_range(make_debug_ranges(data), input);
+
             char line_buff[128];
             const size_t len_to_copy = std::min(sizeof(line_buff) - 1, (size_t)(range.index_end - range.index_start));
             memcpy(line_buff, data + range.index_start, len_to_copy);
@@ -461,16 +459,6 @@ LexerOutput nwtrees::lexer(const char* data)
 
         std::stable_sort(matches, matches + match_count, &cmp);
         LexerMatch& selected_match = matches[0];
-
-        // -- Populate the debug data using the range for this line.
-        // Note: We assume that every token will take, at most, one line.
-
-        const int index_start = input.offset;
-        const int index_end = input.offset + selected_match.length;
-
-        selected_match.token.debug.line = range.line;
-        selected_match.token.debug.column_start = index_start - range.index_start;
-        selected_match.token.debug.column_end = index_end - range.index_start;
 
         // -- Step stream forward, past the matched token length.
 
