@@ -2,7 +2,6 @@
 #include <nwtrees/Lexer.hpp>
 
 #include <algorithm>
-#include <span>
 #include <string_view>
 #include <unordered_map>
 
@@ -25,8 +24,7 @@ namespace
 
     char seek(LexerInput& input);
 
-    int skip_until(const char* tail, const char term);
-    int skip_until(const char* tail, const std::span<const char>& matches);
+
 
     std::vector<DebugRange> make_debug_ranges(const LexerInput& input);
     const DebugRange& find_debug_range(const std::vector<DebugRange>& ranges, const LexerInput& input);
@@ -39,6 +37,12 @@ namespace
 
     inline char read(const LexerInput& input) { return input.base[input.offset]; }
     inline char peek(const LexerInput& input, int count = 1) { return input.base[input.offset + count]; }
+    inline int skip_until(const char* tail, const char term)
+    {
+        const char* head = tail;
+        while (const char ch = *head) { if (ch == term) break; ++head; }
+        return (int)(head - tail);
+    }
 
     inline bool cmp(const LexerMatch& lhs, const LexerMatch& rhs) { return lhs.length > rhs.length; }
     inline bool is_whitespace(const char ch) { return ch == ' ' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r' || ch == '\n'; }
@@ -98,22 +102,6 @@ namespace
         }
 
         return '\0';
-    }
-
-    int skip_until(const char* tail, const char term)
-    {
-        return skip_until(tail, std::span<const char>(&term, 1));
-    }
-
-    int skip_until(const char* tail, const std::span<const char>& matches)
-    {
-        const char* head = tail;
-        while (const char ch = *head)
-        {
-            if (std::find(std::begin(matches), std::end(matches), ch) != std::end(matches)) break;
-            ++head;
-        }
-        return (int)(head - tail);
     }
 
     std::vector<DebugRange> make_debug_ranges(const LexerInput& input)
@@ -241,8 +229,8 @@ namespace
 
             while (read(temp_input))
             {
-                const char matches[] = { '\"', '\n' };
-                temp_input.offset += skip_until(temp_input.head(), matches);
+                const char* head = temp_input.head();
+                temp_input.offset += std::min(skip_until(head, '\"'), skip_until(head, '\n'));
 
                 if (read(temp_input) == '\n')
                 {
