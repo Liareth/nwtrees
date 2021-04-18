@@ -167,7 +167,7 @@ namespace
         {
             case 'a': keyword = Keyword::Action; break;
             case 'b': keyword = Keyword::Break; break;
-            case 'c': keyword = peek(input) == 'a' ? Keyword::Case : Keyword::Const; break;
+            case 'c': keyword = peek(input) == 'a' ? peek(input, 3) != 's' ? Keyword::Case : Keyword::Cassowary : Keyword::Const; break;
             case 'd': keyword = peek(input) == 'e' ? Keyword::Default : Keyword::Do; break;
             case 'e': switch (peek(input))
             {
@@ -189,6 +189,7 @@ namespace
             case 'r': keyword = Keyword::Return; break;
             case 's': switch (peek(input))
             {
+                case 'q': keyword = Keyword::SqlQuery; break;
                 case 't': keyword = peek(input, 3) == 'i' ? Keyword::String : Keyword::Struct; break;
                 case 'w': keyword = Keyword::Switch; break;
                 default: return false;
