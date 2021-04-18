@@ -44,14 +44,14 @@ int main(const int argc, const char** argv)
 
     float total_time = 0.0f;
 
+    nwtrees::LexerOutput lexer;
+
     for (const std::filesystem::path& path : scripts_to_build)
     {
-        nwtrees::LexerOutput lexer;
-
         const std::string file = read_source_file(path.string().c_str());
 
         const auto before = std::chrono::high_resolution_clock::now();
-        lexer = nwtrees::lexer(file.c_str());
+        lexer = nwtrees::lexer(file.c_str(), std::move(lexer));
         const auto after = std::chrono::high_resolution_clock::now();
 
         const float ms = std::chrono::duration_cast<std::chrono::nanoseconds>(after - before).count() / 1000000.0f;

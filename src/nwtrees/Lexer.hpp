@@ -143,7 +143,7 @@ namespace nwtrees
         std::vector<Error> errors;
     };
 
-    LexerOutput lexer(const char* data);
+    LexerOutput lexer(const char* data, LexerOutput&& prev_output = LexerOutput());
 
 #define TREES_TK(str, enum) std::make_pair(std::string_view(str), enum)
 

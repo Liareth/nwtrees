@@ -9,17 +9,13 @@ using namespace nwtrees;
 
 namespace
 {
+    void prepare_output(LexerOutput& output);
+
     struct LexerInput
     {
         const char* base;
         const char* head() const { return base + offset; }
         int offset;
-    };
-
-    struct LexerMatch
-    {
-        Token token;
-        int length;
     };
 
     char seek(LexerInput& input);
@@ -33,6 +29,12 @@ namespace
 
     std::vector<DebugRange> make_debug_ranges(const char* data);
     const DebugRange& find_debug_range(const std::vector<DebugRange>& ranges, const LexerInput& input);
+
+    struct LexerMatch
+    {
+        Token token;
+        int length;
+    };
 
     bool tokenize_keyword(const LexerInput& input, LexerMatch* match);
     bool tokenize_identifier(const LexerInput& input, LexerMatch* match);
@@ -61,6 +63,13 @@ namespace
     inline bool is_letter(const char ch) { return (ch >= 'A' && ch <= 'Z') || ch >= 'a' && ch <= 'z'; }
     inline bool is_digit(const char ch) { return ch >= '0' && ch <= '9'; }
     inline bool is_digit_hex(const char ch) { return is_digit(ch) || (ch >= 'A' && ch <= 'F') || ch >= 'a' && ch <= 'f'; }
+
+    void prepare_output(LexerOutput& output)
+    {
+        output.tokens.clear();
+        output.names.clear();
+        output.errors.clear();
+    }
 
     char seek(LexerInput& input)
     {
@@ -419,9 +428,11 @@ namespace
     }
 }
 
-LexerOutput nwtrees::lexer(const char* data)
+LexerOutput nwtrees::lexer(const char* data, LexerOutput&& prev_output)
 {
-    LexerOutput output;
+    LexerOutput output = std::move(prev_output);
+    prepare_output(output);
+
     LexerInput input = { data, 0 };
 
     while (seek(input))
