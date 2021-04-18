@@ -484,20 +484,13 @@ LexerOutput nwtrees::lexer(const char* data, LexerOutput&& prev_output)
             std::stable_sort(matches, matches + match_count, &cmp);
         }
 
-        // -- Commit token.
-
         LexerMatch& selected_match = matches[0];
-        output.tokens.push_back(std::move(selected_match.token));
+        bool should_commit_match = true;
 
-        // -- Step stream forward, past the matched token length.
+        // -- For tokens that need name buffers, prepare the buffer and update the name entry.
 
-        input.offset += selected_match.length;
-    }
+        Token& token = selected_match.token;
 
-    // -- For tokens that need name buffers, prepare the buffer and update the name entry.
-
-    for (Token& token : output.tokens)
-    {
         const bool is_identifier = token.type == Token::Identifier;
         const bool is_str_literal = token.type == Token::Literal && token.literal == Literal::String;
 
@@ -509,11 +502,30 @@ LexerOutput nwtrees::lexer(const char* data, LexerOutput&& prev_output)
             std::memcpy(output.names.data() + new_idx, input.base + entry->idx, entry->len);
             entry->idx = (int)new_idx;
         }
-    }
 
-    // -- We will check for any string literals that are together and merge them into one token.
-    // This is quite easy: because they are next to each other, their contents are guaranteed to be next
-    // to each other in the buffer, so we just delete the ones at the end and increase the length of the first.
+        // -- If we're a string literal, we merge ourself with the previous token if it was also a string literal.
+
+        if (is_str_literal && !output.tokens.empty())
+        {
+            Token& last_token = output.tokens[output.tokens.size() - 1];
+            if (last_token.type == Token::Literal && last_token.literal == Literal::String)
+            {
+                last_token.literal_data.str.len += token.literal_data.str.len;
+                should_commit_match = false;
+            }
+        }
+
+        // -- Commit token.
+
+        if (should_commit_match)
+        {
+            output.tokens.push_back(token);
+        }
+
+        // -- Step stream forward, past the matched token length.
+
+        input.offset += selected_match.length;
+    }
 
     return output;
 }

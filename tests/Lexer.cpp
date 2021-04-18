@@ -5,13 +5,13 @@
 namespace
 {
     template <typename T>
-    std::string concat(const T& collection)
+    std::string concat(const T& collection, const char separator = ' ')
     {
         std::string ret;
         for (const char* str : collection)
         {
             ret += str;
-            ret += ' ';
+            ret += separator;
         }
         return ret;
     }
@@ -99,11 +99,11 @@ TEST_CLASS(Lexer)
     TEST_METHOD(Literals_String)
     {
         static constexpr std::array literals { R"("test \" ")", R"("testnewline\n")" };
-        nwtrees::LexerOutput lex = nwtrees::lexer(concat(literals).c_str());
-        TEST_EXPECT(lex.tokens.size() == literals.size());
+        nwtrees::LexerOutput lex = nwtrees::lexer(concat(literals, ';').c_str());
+        TEST_EXPECT(lex.tokens.size() == literals.size() * 2);
         TEST_EXPECT(lex.errors.empty());
 
-        for (int i = 0; i < literals.size(); ++i)
+        for (int i = 0; i < literals.size(); i += 2)
         {
             const nwtrees::Token& token = lex.tokens[i];
             TEST_EXPECT(token.type == nwtrees::Token::Literal);
@@ -115,9 +115,8 @@ TEST_CLASS(Lexer)
 
     TEST_METHOD(Literals_String_Concat)
     {
-        return;
-        const char* input = R"("test" "test2" "test3")";
-        nwtrees::LexerOutput lex = nwtrees::lexer(input);
+        static constexpr std::array literals { R"("test")", R"("test2")", R"("test3")" };
+        nwtrees::LexerOutput lex = nwtrees::lexer(concat(literals).c_str());
         TEST_EXPECT(lex.tokens.size() == 1);
 
         const nwtrees::Token& token = lex.tokens[0];
