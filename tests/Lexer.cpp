@@ -192,4 +192,95 @@ TEST_CLASS(Lexer)
         TEST_EXPECT(!nwtrees::lexer("0c").errors.empty());
         TEST_EXPECT(!nwtrees::lexer("@@").errors.empty());
     }
+
+    static constexpr nwtrees::Token tk(const nwtrees::Keyword type)
+    {
+        nwtrees::Token tk = { nwtrees::Token::Keyword };
+        tk.keyword = type;
+        return tk;
+    }
+
+    static constexpr nwtrees::Token tk(const nwtrees::Literal type)
+    {
+        nwtrees::Token tk = { nwtrees::Token::Literal };
+        tk.literal = type;
+        return tk;
+    }
+
+    static constexpr nwtrees::Token tk(const nwtrees::Punctuator type)
+    {
+        nwtrees::Token tk = { nwtrees::Token::Punctuator };
+        tk.punctuator = type;
+        return tk;
+    }
+
+    static constexpr nwtrees::Token tk()
+    {
+        return { nwtrees::Token::Identifier };
+    }
+
+    TEST_METHOD(Comprehensive)
+    {
+        using K = nwtrees::Keyword;
+        using L = nwtrees::Literal;
+        using P = nwtrees::Punctuator;
+
+        const char* code =
+        R"(
+            int add(const int a, const int b)
+            {
+                return a + b;
+            }
+
+            void main()
+            {
+                const int value = add(5, 7);
+                const string str = "Hello world!\n" "And me, too!";
+
+                int value2 = value;
+                value2 >>= 0x5F;
+                value2 /= .1e7;
+            }
+        )";
+
+        static constexpr std::array expected_tokens =
+        {
+            tk(K::Int), tk(), tk(P::LeftParen),
+                tk(K::Const), tk(K::Int), tk(), tk(P::Comma),
+                tk(K::Const), tk(K::Int), tk(),
+            tk(P::RightParen),
+
+            tk(P::LeftCurlyBracket),
+                tk(K::Return), tk(), tk(P::Plus), tk(), tk(P::Semicolon),
+            tk(P::RightCurlyBracket),
+
+            tk(K::Void), tk(), tk(P::LeftParen), tk(P::RightParen),
+            tk(P::LeftCurlyBracket),
+
+                tk(K::Const), tk(K::Int), tk(), tk(P::Equal), tk(), tk(P::LeftParen),
+                    tk(L::Int), tk(P::Comma), tk(L::Int),
+                tk(P::RightParen), tk(P::Semicolon),
+
+                tk(K::Const), tk(K::String), tk(), tk(P::Equal), tk(L::String), tk(P::Semicolon),
+
+                tk(K::Int), tk(), tk(P::Equal), tk(), tk(P::Semicolon),
+
+                tk(), tk(P::GreaterGreaterEquals), tk(L::Int), tk(P::Semicolon),
+
+                tk(), tk(P::SlashEquals), tk(L::Float), tk(P::Semicolon),
+
+            tk(P::RightCurlyBracket),
+        };
+
+        nwtrees::LexerOutput lex = nwtrees::lexer(code);
+        TEST_EXPECT(expected_tokens.size() == lex.tokens.size());
+
+        for (int i = 0; i < lex.tokens.size(); ++i)
+        {
+            const nwtrees::Token& expected_token = expected_tokens[i];
+            const nwtrees::Token& actual_token = lex.tokens[i];
+            const int len_to_compare = expected_token.type == nwtrees::Token::Identifier ? 1 : 2;
+            TEST_EXPECT(memcmp(&expected_token, &actual_token, len_to_compare) == 0); // Checks types only, not contents
+        }
+    }
 };
