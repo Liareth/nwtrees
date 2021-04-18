@@ -467,7 +467,11 @@ LexerOutput nwtrees::lexer(const char* data)
         // Note: the stable_sort ensures that if we need to choose between an equal-length token of different types,
         //       we select the token in the same order as listed above. This is important for keyword vs identifier.
 
-        std::stable_sort(matches, matches + match_count, &cmp);
+        if (match_count > 1)
+        {
+            std::stable_sort(matches, matches + match_count, &cmp);
+        }
+
         LexerMatch& selected_match = matches[0];
 
         // -- Step stream forward, past the matched token length.
