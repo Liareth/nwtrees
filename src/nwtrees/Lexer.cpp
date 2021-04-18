@@ -1,5 +1,5 @@
-#include <nwtrees/Assert.hpp>
 #include <nwtrees/Lexer.hpp>
+#include <nwtrees/util/Assert.hpp>
 
 #include <algorithm>
 #include <string_view>

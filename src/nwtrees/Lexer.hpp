@@ -1,6 +1,6 @@
 #pragma once
 
-#include <nwtrees/NWTrees.hpp>
+#include <nwtrees/util/Error.hpp>
 
 #include <array>
 #include <algorithm>

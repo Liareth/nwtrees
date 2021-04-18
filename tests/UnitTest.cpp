@@ -1,6 +1,6 @@
 #include "UnitTest.hpp"
 
-#include <nwtrees/Assert.hpp>
+#include <nwtrees/util/Assert.hpp>
 
 #if defined(WIN32)
     #include <Windows.h>
