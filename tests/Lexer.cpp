@@ -158,7 +158,7 @@ TEST_CLASS(Lexer)
             TEST_EXPECT(token.type == nwtrees::Token::Literal);
             TEST_EXPECT(token.literal == nwtrees::Literal::Float);
 
-            const float as_flt = std::atof(literals[i]);
+            const float as_flt = (float)std::atof(literals[i]);
             TEST_EXPECT(token.literal_data.flt == as_flt);
         }
     }
