@@ -472,15 +472,14 @@ LexerOutput nwtrees::lexer(const char* data)
             std::stable_sort(matches, matches + match_count, &cmp);
         }
 
+        // -- Commit token.
+
         LexerMatch& selected_match = matches[0];
+        output.tokens.push_back(std::move(selected_match.token));
 
         // -- Step stream forward, past the matched token length.
 
         input.offset += selected_match.length;
-
-        // -- Commit token.
-
-        output.tokens.push_back(std::move(matches[0].token));
     }
 
     // -- For tokens that need name buffers, prepare the buffer and update the name entry.
